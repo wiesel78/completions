@@ -53,6 +53,17 @@ Register-ArgumentCompleter -CommandName 'git' -ScriptBlock {
                     [System.Management.Automation.CompletionResult]::new($branch, $branch, 'ParameterValue', "local branch $branch")
                 }
         }
+        
+        if ($usageLines | Select-String "pathspec>"){
+            $fileCompletions = $(git status --porcelain) | 
+                Select-String '^\sM' | 
+                ForEach-Object { 
+                    $file = $_.ToString().Split(' ')[2]
+                    [System.Management.Automation.CompletionResult]::new($file, $file, 'ParameterValue', $file)
+                }
+
+            $filteredCompletions += $fileCompletions
+        }
 
         # from the help page of the subcommand we can parse all available options
         # of this git subcommand
@@ -71,7 +82,6 @@ Register-ArgumentCompleter -CommandName 'git' -ScriptBlock {
             } 
 
         $filteredCompletions += $completions |
-            
             ForEach-Object {
                 [System.Management.Automation.CompletionResult]::new(
                     $_.Command,
