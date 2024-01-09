@@ -1,5 +1,6 @@
-# Register the custom completion script for a specific parameter of a command
-Register-ArgumentCompleter -CommandName 'git' -ScriptBlock {
+
+
+[scriptblock]$__gitCompleterBlock = {
     param(
             $WordToComplete,
             $CommandAst,
@@ -47,10 +48,12 @@ Register-ArgumentCompleter -CommandName 'git' -ScriptBlock {
         # if the command ca have a branch name as argument, we need the current available
         # list of all branches and put that into the result list
         if ($usageLines | Select-String "branch>"){
-            $filteredCompletions += $(git branch -l) |
+            $filteredCompletions += $(git branch -a -l) |
+                Where-Object -FilterScript { $_.Contains($word) } |
                 ForEach-Object { 
-                    $branch = $_.Replace("*","").Trim()
-                    [System.Management.Automation.CompletionResult]::new($branch, $branch, 'ParameterValue', "local branch $branch")
+                    if ($_ -match "(?<row>\*?\s*(?<branch>[^\s]+)(\s+->\s+[^\s]+)?)") {
+                        [System.Management.Automation.CompletionResult]::new($Matches.Branch, $Matches.Row, 'ParameterValue', $Matches.Row)
+                    }
                 }
         }
         
@@ -95,3 +98,7 @@ Register-ArgumentCompleter -CommandName 'git' -ScriptBlock {
         
     }
 }
+
+
+# Register the custom completion script for a specific parameter of a command
+Register-ArgumentCompleter -CommandName 'git' -ScriptBlock $__gitCompleterBlock 
